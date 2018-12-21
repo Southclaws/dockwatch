@@ -1,4 +1,4 @@
-package dockerwatch
+package dockwatch
 
 import (
 	"context"
