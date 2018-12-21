@@ -45,17 +45,15 @@ type Watcher struct {
 	Errors chan error
 
 	docker  *client.Client
-	labels  []string
 	current []label // current label value for each container
 }
 
 // New starts a new watcher which calls fn when
-func New(docker *client.Client, labels []string) (w *Watcher) {
+func New(docker *client.Client) (w *Watcher) {
 	w = &Watcher{
 		Events: make(chan Event, 16),
 		Errors: make(chan error, 16),
 		docker: docker,
-		labels: labels,
 	}
 	go w.start()
 	return
