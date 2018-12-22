@@ -5,6 +5,7 @@ import (
 
 	"github.com/Southclaws/dockwatch"
 	"github.com/docker/docker/client"
+	"github.com/kr/pretty"
 )
 
 func main() {
@@ -18,7 +19,7 @@ func main() {
 	for {
 		select {
 		case e := <-w.Events:
-			log.Printf("%s: %v (%s)\n", e.Type, e.Container.Names, e.Container.ID)
+			log.Printf("%s: %v (%s)\n%s\n", e.Type, e.Container.Names, e.Container.ID, pretty.Sprint(e.Container))
 		case e := <-w.Errors:
 			log.Println("Error:", e)
 		}
