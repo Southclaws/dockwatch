@@ -2,13 +2,13 @@ package dockwatch
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"sort"
 	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
+	"github.com/kr/pretty"
 )
 
 // EventType represents types of change events
@@ -27,17 +27,11 @@ type Event struct {
 	Container types.Container
 }
 
-type label struct {
-	container types.Container
-	key       string
-	value     string
-}
+type containers []types.Container
 
-type labels []label
-
-func (l labels) Len() int           { return len(l) }
-func (l labels) Less(i, j int) bool { return l[i].container.ID < l[j].container.ID }
-func (l labels) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
+func (l containers) Len() int           { return len(l) }
+func (l containers) Less(i, j int) bool { return l[i].ID < l[j].ID }
+func (l containers) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
 
 // Watcher represents a daemon that watches containers for a specific label
 type Watcher struct {
@@ -45,7 +39,7 @@ type Watcher struct {
 	Errors chan error
 
 	docker  *client.Client
-	current []label // current label value for each container
+	current []types.Container
 }
 
 // New starts a new watcher which calls fn when
@@ -70,26 +64,21 @@ func (w *Watcher) start() {
 }
 
 func (w *Watcher) check() (err error) {
-	containers, err := w.docker.ContainerList(context.Background(), types.ContainerListOptions{})
+	next, err := w.docker.ContainerList(context.Background(), types.ContainerListOptions{})
 	if err != nil {
 		return
 	}
 
-	var next []label
-	for _, container := range containers {
-		for k, v := range container.Labels {
-			next = append(next, label{container: container, key: k, value: v})
-		}
+	for _, change := range diff(w.current, next) {
+		w.Events <- change
 	}
 
-	for _, change := range diff(w.current, next) {
-		fmt.Println(change)
-	}
+	w.current = next
 
 	return
 }
 
-func diff(current labels, next labels) (result []Event) {
+func diff(current containers, next containers) (result []Event) {
 	if len(current) == 0 && len(next) == 0 {
 		return
 	}
@@ -97,11 +86,11 @@ func diff(current labels, next labels) (result []Event) {
 	sort.Sort(current)
 	sort.Sort(next)
 
-	for _, o := range current {
+	for _, c := range next {
 		exists := false
-		var t label
-		for _, t = range next {
-			if o.container.ID == t.container.ID {
+		var n types.Container
+		for _, n = range current {
+			if c.ID == n.ID {
 				exists = true
 				break
 			}
@@ -109,22 +98,24 @@ func diff(current labels, next labels) (result []Event) {
 		if !exists {
 			result = append(result, Event{
 				Type:      EventTypeCreate,
-				Container: o.container,
+				Container: c,
 			})
 		} else {
-			if !reflect.DeepEqual(o, t) {
+			if !reflect.DeepEqual(c, n) {
 				result = append(result, Event{
 					Type:      EventTypeUpdate,
-					Container: o.container,
+					Container: c,
 				})
+
+				pretty.Println(pretty.Diff(c, n))
 			}
 		}
 	}
 
-	for _, t := range next {
+	for _, n := range current {
 		exists := false
-		for _, o := range current {
-			if t.container.ID == o.container.ID {
+		for _, c := range next {
+			if n.ID == c.ID {
 				exists = true
 				break
 			}
@@ -132,7 +123,7 @@ func diff(current labels, next labels) (result []Event) {
 		if !exists {
 			result = append(result, Event{
 				Type:      EventTypeDelete,
-				Container: t.container,
+				Container: n,
 			})
 		}
 	}
