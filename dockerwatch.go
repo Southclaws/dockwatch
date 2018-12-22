@@ -8,7 +8,6 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
-	"github.com/kr/pretty"
 )
 
 // EventType represents types of change events
@@ -101,13 +100,11 @@ func diff(current containers, next containers) (result []Event) {
 				Container: c,
 			})
 		} else {
-			if !reflect.DeepEqual(c, n) {
+			if !containersEqual(c, n) {
 				result = append(result, Event{
 					Type:      EventTypeUpdate,
 					Container: c,
 				})
-
-				pretty.Println(pretty.Diff(c, n))
 			}
 		}
 	}
@@ -130,3 +127,40 @@ func diff(current containers, next containers) (result []Event) {
 
 	return
 }
+
+func containersEqual(a, b types.Container) bool {
+	// easy ones first
+	if a.ID != b.ID ||
+		a.Image != b.Image ||
+		a.ImageID != b.ImageID ||
+		a.Command != b.Command ||
+		a.State != b.State ||
+		a.Status != b.Status ||
+		a.SizeRw != b.SizeRw ||
+		a.SizeRootFs != b.SizeRootFs {
+		return false
+	}
+
+	aPorts := ports(a.Ports)
+	bPorts := ports(b.Ports)
+	sort.Sort(aPorts)
+	sort.Sort(bPorts)
+
+	return reflect.DeepEqual(a.Names, b.Names) &&
+		reflect.DeepEqual(a.Created, b.Created) &&
+		reflect.DeepEqual(aPorts, bPorts) &&
+		reflect.DeepEqual(a.Labels, b.Labels) &&
+		reflect.DeepEqual(a.HostConfig, b.HostConfig) &&
+		reflect.DeepEqual(a.NetworkSettings, b.NetworkSettings) &&
+		reflect.DeepEqual(a.Mounts, b.Mounts)
+}
+
+// Because the Docker API seems to randomly change the order of the `ports`
+// field, and arrays are sorted, this results in random "update" events. To
+// solve this, the above function has to compare each field individually and the
+// ports field must be sorted, hence the custom type and sort impl.
+type ports []types.Port
+
+func (l ports) Len() int           { return len(l) }
+func (l ports) Less(i, j int) bool { return l[i].PrivatePort < l[j].PrivatePort }
+func (l ports) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
