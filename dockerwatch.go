@@ -143,39 +143,27 @@ func containersEqual(a, b types.Container) bool {
 		return false
 	}
 
-	aPorts := ports(a.Ports)
-	bPorts := ports(b.Ports)
-	sort.Sort(aPorts)
-	sort.Sort(bPorts)
+	// Because the Docker API seems to randomly change the order of array fields
+	// some fields need to be sorted before comparison.
 
-	aMounts := mounts(a.Mounts)
-	bMounts := mounts(b.Mounts)
-	sort.Sort(aMounts)
-	sort.Sort(bMounts)
+	// sort port by private port first then by type
+	sort.Slice(a.Ports, func(i, j int) bool { return a.Ports[i].PrivatePort < a.Ports[j].PrivatePort })
+	sort.Slice(b.Ports, func(i, j int) bool { return a.Ports[i].PrivatePort < a.Ports[j].PrivatePort })
+	sort.Slice(a.Ports, func(i, j int) bool { return a.Ports[i].Type < a.Ports[j].Type })
+	sort.Slice(b.Ports, func(i, j int) bool { return a.Ports[i].Type < a.Ports[j].Type })
+	if !reflect.DeepEqual(a.Ports, b.Ports) {
+		return false
+	}
+
+	sort.Slice(a.Mounts, func(i, j int) bool { return a.Mounts[i].Destination < a.Mounts[j].Destination })
+	sort.Slice(b.Mounts, func(i, j int) bool { return a.Mounts[i].Destination < a.Mounts[j].Destination })
+	if !reflect.DeepEqual(a.Mounts, b.Mounts) {
+		return false
+	}
 
 	return reflect.DeepEqual(a.Names, b.Names) &&
 		reflect.DeepEqual(a.Created, b.Created) &&
-		reflect.DeepEqual(aPorts, bPorts) &&
 		reflect.DeepEqual(a.Labels, b.Labels) &&
 		reflect.DeepEqual(a.HostConfig, b.HostConfig) &&
-		reflect.DeepEqual(a.NetworkSettings, b.NetworkSettings) &&
-		reflect.DeepEqual(aMounts, bMounts)
+		reflect.DeepEqual(a.NetworkSettings, b.NetworkSettings)
 }
-
-// Because the Docker API seems to randomly change the order of the `ports`
-// field, and arrays are sorted, this results in random "update" events. To
-// solve this, the above function has to compare each field individually and the
-// array fields must be sorted, hence the custom type and sort impl.
-type ports []types.Port
-
-func (l ports) Len() int { return len(l) }
-func (l ports) Less(i, j int) bool {
-	return (l[i].PrivatePort < l[j].PrivatePort && l[i].Type < l[j].Type)
-}
-func (l ports) Swap(i, j int) { l[i], l[j] = l[j], l[i] }
-
-type mounts []types.MountPoint
-
-func (l mounts) Len() int           { return len(l) }
-func (l mounts) Less(i, j int) bool { return l[i].Destination < l[j].Destination }
-func (l mounts) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
