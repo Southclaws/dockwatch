@@ -24,6 +24,7 @@ const (
 type Event struct {
 	Type      EventType
 	Container types.Container
+	Original  types.Container // only set for UPDATE events
 }
 
 type containers []types.Container
@@ -85,33 +86,10 @@ func diff(current containers, next containers) (result []Event) {
 	sort.Sort(current)
 	sort.Sort(next)
 
-	for _, c := range next {
+	for _, n := range next {
 		exists := false
-		var n types.Container
-		for _, n = range current {
-			if c.ID == n.ID {
-				exists = true
-				break
-			}
-		}
-		if !exists {
-			result = append(result, Event{
-				Type:      EventTypeCreate,
-				Container: c,
-			})
-		} else {
-			if !containersEqual(c, n) {
-				result = append(result, Event{
-					Type:      EventTypeUpdate,
-					Container: c,
-				})
-			}
-		}
-	}
-
-	for _, n := range current {
-		exists := false
-		for _, c := range next {
+		var c types.Container
+		for _, c = range current {
 			if n.ID == c.ID {
 				exists = true
 				break
@@ -119,8 +97,32 @@ func diff(current containers, next containers) (result []Event) {
 		}
 		if !exists {
 			result = append(result, Event{
-				Type:      EventTypeDelete,
+				Type:      EventTypeCreate,
 				Container: n,
+			})
+		} else {
+			if !containersEqual(n, c) {
+				result = append(result, Event{
+					Type:      EventTypeUpdate,
+					Container: c,
+					Original:  n,
+				})
+			}
+		}
+	}
+
+	for _, c := range current {
+		exists := false
+		for _, n := range next {
+			if c.ID == n.ID {
+				exists = true
+				break
+			}
+		}
+		if !exists {
+			result = append(result, Event{
+				Type:      EventTypeDelete,
+				Container: c,
 			})
 		}
 	}
