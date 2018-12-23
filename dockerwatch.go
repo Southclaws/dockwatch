@@ -148,15 +148,15 @@ func containersEqual(a, b types.Container) bool {
 
 	// sort port by private port first then by type
 	sort.Slice(a.Ports, func(i, j int) bool { return a.Ports[i].Type < a.Ports[j].Type })
-	sort.Slice(b.Ports, func(i, j int) bool { return a.Ports[i].Type < a.Ports[j].Type })
+	sort.Slice(b.Ports, func(i, j int) bool { return b.Ports[i].Type < b.Ports[j].Type })
 	sort.Slice(a.Ports, func(i, j int) bool { return a.Ports[i].PrivatePort < a.Ports[j].PrivatePort })
-	sort.Slice(b.Ports, func(i, j int) bool { return a.Ports[i].PrivatePort < a.Ports[j].PrivatePort })
+	sort.Slice(b.Ports, func(i, j int) bool { return b.Ports[i].PrivatePort < b.Ports[j].PrivatePort })
 	if !reflect.DeepEqual(a.Ports, b.Ports) {
 		return false
 	}
 
 	sort.Slice(a.Mounts, func(i, j int) bool { return a.Mounts[i].Destination < a.Mounts[j].Destination })
-	sort.Slice(b.Mounts, func(i, j int) bool { return a.Mounts[i].Destination < a.Mounts[j].Destination })
+	sort.Slice(b.Mounts, func(i, j int) bool { return b.Mounts[i].Destination < b.Mounts[j].Destination })
 	if !reflect.DeepEqual(a.Mounts, b.Mounts) {
 		return false
 	}
