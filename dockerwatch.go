@@ -165,7 +165,7 @@ func containersEqual(a, b types.Container) bool {
 // Because the Docker API seems to randomly change the order of the `ports`
 // field, and arrays are sorted, this results in random "update" events. To
 // solve this, the above function has to compare each field individually and the
-// ports field must be sorted, hence the custom type and sort impl.
+// array fields must be sorted, hence the custom type and sort impl.
 type ports []types.Port
 
 func (l ports) Len() int           { return len(l) }
