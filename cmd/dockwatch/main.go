@@ -19,7 +19,11 @@ func main() {
 	for {
 		select {
 		case e := <-w.Events:
-			log.Printf("%s: %v (%s)\n%s\n", e.Type, e.Container.Names, e.Container.ID, pretty.Sprint(e.Container))
+			if e.Type == dockwatch.EventTypeUpdate {
+				log.Printf("%s: %v (%s)\n%s\n", e.Type, e.Container.Names, e.Container.ID, pretty.Sprint(pretty.Diff(e.Container, e.Original)))
+			} else {
+				log.Printf("%s: %v (%s)\n%s\n", e.Type, e.Container.Names, e.Container.ID, pretty.Sprint(e.Container))
+			}
 		case e := <-w.Errors:
 			log.Println("Error:", e)
 		}
