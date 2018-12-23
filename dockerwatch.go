@@ -168,9 +168,11 @@ func containersEqual(a, b types.Container) bool {
 // array fields must be sorted, hence the custom type and sort impl.
 type ports []types.Port
 
-func (l ports) Len() int           { return len(l) }
-func (l ports) Less(i, j int) bool { return l[i].PrivatePort < l[j].PrivatePort }
-func (l ports) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
+func (l ports) Len() int { return len(l) }
+func (l ports) Less(i, j int) bool {
+	return (l[i].PrivatePort < l[j].PrivatePort && l[i].Type < l[j].Type)
+}
+func (l ports) Swap(i, j int) { l[i], l[j] = l[j], l[i] }
 
 type mounts []types.MountPoint
 
