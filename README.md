@@ -2,7 +2,7 @@
 
 A very simple library for listening to Docker container events.
 
-## Usage
+## Usage
 
 Create a watcher from a Docker client, listen to `Events` and `Errors`. Events can be `CREATE`, `UPDATE` or `DELETE`.
 
