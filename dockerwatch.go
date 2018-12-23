@@ -148,13 +148,18 @@ func containersEqual(a, b types.Container) bool {
 	sort.Sort(aPorts)
 	sort.Sort(bPorts)
 
+	aMounts := mounts(a.Mounts)
+	bMounts := mounts(b.Mounts)
+	sort.Sort(aMounts)
+	sort.Sort(bMounts)
+
 	return reflect.DeepEqual(a.Names, b.Names) &&
 		reflect.DeepEqual(a.Created, b.Created) &&
 		reflect.DeepEqual(aPorts, bPorts) &&
 		reflect.DeepEqual(a.Labels, b.Labels) &&
 		reflect.DeepEqual(a.HostConfig, b.HostConfig) &&
 		reflect.DeepEqual(a.NetworkSettings, b.NetworkSettings) &&
-		reflect.DeepEqual(a.Mounts, b.Mounts)
+		reflect.DeepEqual(aMounts, bMounts)
 }
 
 // Because the Docker API seems to randomly change the order of the `ports`
@@ -166,3 +171,9 @@ type ports []types.Port
 func (l ports) Len() int           { return len(l) }
 func (l ports) Less(i, j int) bool { return l[i].PrivatePort < l[j].PrivatePort }
 func (l ports) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
+
+type mounts []types.MountPoint
+
+func (l mounts) Len() int           { return len(l) }
+func (l mounts) Less(i, j int) bool { return l[i].Destination < l[j].Destination }
+func (l mounts) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
