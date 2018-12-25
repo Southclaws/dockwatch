@@ -137,7 +137,6 @@ func containersEqual(a, b types.Container) bool {
 		a.ImageID != b.ImageID ||
 		a.Command != b.Command ||
 		a.State != b.State ||
-		a.Status != b.Status ||
 		a.SizeRw != b.SizeRw ||
 		a.SizeRootFs != b.SizeRootFs {
 		return false
